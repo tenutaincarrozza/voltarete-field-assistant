@@ -66,6 +66,10 @@ Open the demo page, start the voice widget and say one of these:
 2. **ElevenLabs:** create an agent (language Italian) with `agent/system-prompt.md`, upload `knowledge-base/*.md` with RAG enabled, and create the two webhook tools from `agent/tools.json`, pointing at your project URL. Add a workspace secret with the same value as `AGENT_SECRET` and send it as the `x-agent-secret` header.
 3. **Web:** set your Supabase URL, publishable key and agent ID in `web/index.html` and deploy the `web/` folder to any static host (Vercel config included).
 
+## Business case
+
+Why an operator would buy this, what it is worth and how the deal could be structured: **[docs/business-case.md](docs/business-case.md)**. In the illustrative base case, the agent returns about €181k a year against about €63k of first-year cost, mainly by cutting second visits.
+
 ## From demo to production
 
 What I would add before putting this in front of real technicians:
