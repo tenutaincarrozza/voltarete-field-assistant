@@ -10,7 +10,7 @@ A technician standing at a faulty charger has both hands busy. Instead of scroll
 
 Every ticket and status change shows up instantly on the demo page.
 
-> **Live demo:** _[link]_ · **Video walkthrough:** _[link]_
+> **Live demo:** [voltarete-field-assistant.vercel.app](https://voltarete-field-assistant.vercel.app) · **Video walkthrough:** _[link]_
 
 > VoltaRete is a **fictional** operator. All sites, chargers, error codes and procedures are synthetic data written for this demo. In a real deployment the agent would connect to the operator's own knowledge base (e.g. Notion) and field service system.
 
