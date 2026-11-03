@@ -1,0 +1,6 @@
+.env
+.env.*
+.vercel
+.supabase
+node_modules
+.DS_Store

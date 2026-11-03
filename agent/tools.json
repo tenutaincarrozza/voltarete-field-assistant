@@ -1,0 +1,49 @@
+{
+  "_note": "ElevenAgents webhook tools. The x-agent-secret header references a workspace secret; its value is never stored in this repo.",
+  "tools": [
+    {
+      "type": "webhook",
+      "name": "get_charger_status",
+      "description": "Recupera lo stato in tempo reale di una colonnina VoltaRete: modello, stato, errore attivo, sito, numero di colonnine funzionanti nel sito, guasti degli ultimi 30 giorni, guasti ricorrenti e ticket aperti. Usalo appena il tecnico comunica il codice della colonnina.",
+      "api_schema": {
+        "url": "https://<project-ref>.supabase.co/functions/v1/get_charger_status",
+        "method": "POST",
+        "request_headers": { "x-agent-secret": { "secret": "<workspace secret>" } },
+        "request_body_schema": {
+          "type": "object",
+          "required": ["charger_code"],
+          "properties": {
+            "charger_code": { "type": "string", "description": "Codice della colonnina nel formato VR-XXX-00-C0, per esempio VR-MIL-01-C2." }
+          }
+        }
+      }
+    },
+    {
+      "type": "webhook",
+      "name": "create_ticket",
+      "description": "Apre un ticket di manutenzione per una colonnina VoltaRete e aggiorna lo stato della colonnina. Usalo SOLO dopo aver raccolto tutte le informazioni, fatto il riepilogo al tecnico e ricevuto la sua conferma esplicita.",
+      "api_schema": {
+        "url": "https://<project-ref>.supabase.co/functions/v1/create_ticket",
+        "method": "POST",
+        "request_headers": { "x-agent-secret": { "secret": "<workspace secret>" } },
+        "request_body_schema": {
+          "type": "object",
+          "required": ["charger_code", "description", "priority", "charger_state_after"],
+          "properties": {
+            "charger_code": { "type": "string", "description": "Codice della colonnina nel formato VR-XXX-00-C0." },
+            "error_code": { "type": "string", "description": "Codice di errore nel formato E-000, per esempio E-310. Ometti se non c'è un codice." },
+            "description": { "type": "string", "description": "Descrizione breve in italiano di cosa ha osservato il tecnico e quali procedure ha già tentato, con l'esito." },
+            "priority": { "type": "string", "enum": ["P1", "P2", "P3", "P4"], "description": "Priorità secondo il catalogo errori VoltaRete." },
+            "charger_state_after": { "type": "string", "enum": ["in_service", "degraded", "out_of_service"], "description": "Stato della colonnina al termine dell'intervento." }
+          }
+        }
+      }
+    }
+  ],
+  "agent": {
+    "language": "it",
+    "first_message": "Ciao, sono l'assistente tecnico VoltaRete. Su quale colonnina stai lavorando?",
+    "knowledge_base": "knowledge-base/*.md, RAG enabled (multilingual_e5_large_instruct)",
+    "system_prompt": "agent/system-prompt.md"
+  }
+}

@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VoltaRete Field Assistant</title>
+<meta name="description" content="Demo: assistente vocale ElevenAgents per tecnici di manutenzione di colonnine di ricarica, con knowledge base e apertura ticket in tempo reale.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f7f5;
+    --surface: #ffffff;
+    --surface-2: #eef1ec;
+    --ink: #161a17;
+    --muted: #5b625d;
+    --line: #dde2dc;
+    --accent: #1f7a4d;
+    --accent-ink: #ffffff;
+    --p1: #c0392b; --p2: #d9822b; --p3: #b8a21a; --p4: #6b7a72;
+    --ok: #1f7a4d; --warn: #c9861a; --bad: #c0392b; --off: #7a837d;
+    --flash: #e3f4ea;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1311; --surface: #171c19; --surface-2: #1e2420; --ink: #e9ede9; --muted: #9aa49d;
+      --line: #2a322d; --accent: #3fbf7f; --accent-ink: #0b1a12; --flash: #1c3527;
+      --ok: #3fbf7f; --warn: #e3a64a; --bad: #ef6b5b; --off: #7f8a83;
+      --p1: #ef6b5b; --p2: #e89a4f; --p3: #d6c34a; --p4: #8c9a92;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1311; --surface: #171c19; --surface-2: #1e2420; --ink: #e9ede9; --muted: #9aa49d;
+    --line: #2a322d; --accent: #3fbf7f; --accent-ink: #0b1a12; --flash: #1c3527;
+    --ok: #3fbf7f; --warn: #e3a64a; --bad: #ef6b5b; --off: #7f8a83;
+    --p1: #ef6b5b; --p2: #e89a4f; --p3: #d6c34a; --p4: #8c9a92;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 Inter, system-ui, sans-serif; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .86em; }
+  header { max-width: 1240px; margin: 0 auto; padding: 28px 16px 8px; }
+  .eyebrow { color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+  h1 { margin: 6px 0 6px; font-size: clamp(26px, 4vw, 36px); line-height: 1.15; letter-spacing: -.02em; }
+  .lead { color: var(--muted); max-width: 760px; margin: 0; }
+  main { max-width: 1240px; margin: 0 auto; padding: 20px 16px 120px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 20px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  .card h2 { font-size: 15px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .count { color: var(--muted); font-weight: 500; }
+  .stack { display: grid; gap: 20px; align-content: start; }
+  ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+  ol.steps li::marker { color: var(--accent); font-weight: 700; }
+  .scenario { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: var(--surface-2); }
+  .scenario + .scenario { margin-top: 10px; }
+  .scenario b { display: block; margin-bottom: 2px; }
+  .scenario .say { color: var(--muted); font-style: italic; }
+  .arch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 13px; }
+  .arch div { background: var(--surface-2); border-radius: 10px; padding: 10px; }
+  .arch strong { display: block; font-size: 12px; color: var(--accent); }
+  @media (max-width: 480px) { .arch { grid-template-columns: 1fr; } }
+  .live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-weight: 500; margin-left: auto; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--off); }
+  .live.on .dot { background: var(--ok); box-shadow: 0 0 0 0 var(--ok); animation: pulse 2s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent); } 70% { box-shadow: 0 0 0 8px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+  .tickets { display: grid; gap: 10px; }
+  .ticket { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: start; transition: background 1.5s; }
+  .ticket.new { background: var(--flash); }
+  .prio { font-weight: 700; font-size: 12px; padding: 3px 8px; border-radius: 6px; color: #fff; grid-row: span 2; }
+  .prio.P1 { background: var(--p1); } .prio.P2 { background: var(--p2); } .prio.P3 { background: var(--p3); color: #1a1a1a; } .prio.P4 { background: var(--p4); }
+  .ticket .top { font-weight: 600; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+  .ticket .desc { color: var(--muted); grid-column: 2 / 4; font-size: 14px; }
+  .ticket time { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .empty { color: var(--muted); text-align: center; padding: 28px 8px; border: 1px dashed var(--line); border-radius: 12px; }
+  .chargers { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+  .ch { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; transition: background 1.5s; }
+  .ch.new { background: var(--flash); }
+  .ch .code { font-weight: 600; }
+  .ch .meta { color: var(--muted); font-size: 12px; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; margin-top: 4px; }
+  .badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .s-available, .s-charging { color: var(--ok); } .s-degraded { color: var(--warn); } .s-out_of_service { color: var(--bad); } .s-offline { color: var(--off); }
+  .err { font-family: "JetBrains Mono", monospace; font-size: 11px; background: var(--surface-2); padding: 1px 6px; border-radius: 5px; margin-left: 4px; color: var(--ink); }
+  footer { max-width: 1240px; margin: 0 auto; padding: 0 16px 40px; color: var(--muted); font-size: 13px; }
+  .note { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">Demo · ElevenAgents</div>
+  <h1>VoltaRete Field Assistant</h1>
+  <p class="lead">Un assistente vocale in italiano per i tecnici di manutenzione delle colonnine di ricarica. Il tecnico ha le mani occupate: parla, l'agente legge lo stato della colonnina, lo guida nelle procedure in sicurezza e apre il ticket. A destra vedi i dati aggiornarsi in tempo reale.</p>
+</header>
+
+<main>
+  <div class="stack">
+    <section class="card">
+      <h2>Come provarlo</h2>
+      <ol class="steps">
+        <li>Clicca sul pulsante dell'assistente in basso a destra e consenti l'uso del microfono.</li>
+        <li>Di' su quale colonnina stai lavorando, ad esempio uno degli scenari qui sotto.</li>
+        <li>Segui le istruzioni. Quando l'agente apre un ticket, compare subito a destra.</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>Scenari</h2>
+      <div class="scenario">
+        <b>Guasto ricorrente · VR-MIL-01-C2</b>
+        <span class="say">"Sono sulla V R MIL zero uno C due, risulta offline."</span>
+        <p class="note">Errore di comunicazione ripetuto per la quarta volta in 30 giorni: l'agente guida il riavvio del modem e propone comunque il ticket.</p>
+      </div>
+      <div class="scenario">
+        <b>Rischio elettrico · VR-ROM-01-C2</b>
+        <span class="say">"Sulla V R ROM zero uno C due c'è un guasto di isolamento, posso aprire il vano?"</span>
+        <p class="note">L'agente rifiuta l'intervento, chiede la messa fuori servizio e apre un ticket P1.</p>
+      </div>
+      <div class="scenario">
+        <b>Sovratemperatura · VR-BOL-01-C1</b>
+        <span class="say">"La V R BOL zero uno C1 eroga poca potenza."</span>
+        <p class="note">Procedura di pulizia filtri passo per passo, con la regola dei due tentativi.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Architettura</h2>
+      <div class="arch">
+        <div><strong>Voce</strong>ElevenAgents: ASR, LLM e TTS in italiano, RAG su 6 documenti</div>
+        <div><strong>Tool</strong>Webhook <span class="mono">get_charger_status</span> e <span class="mono">create_ticket</span></div>
+        <div><strong>Backend</strong>Supabase Edge Functions e Postgres, aggiornamenti realtime</div>
+      </div>
+      <p class="note">VoltaRete è un operatore fittizio: siti, colonnine e procedure sono dati sintetici creati per questa demo.</p>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <h2>Ticket aperti dall'agente <span class="count" id="ticket-count"></span>
+        <span class="live" id="live"><span class="dot"></span><span id="live-label">connessione…</span></span>
+      </h2>
+      <div class="tickets" id="tickets"><div class="empty">Nessun ticket ancora. Parla con l'assistente per aprirne uno.</div></div>
+    </section>
+
+    <section class="card">
+      <h2>Stato colonnine <span class="count" id="charger-count"></span></h2>
+      <div class="chargers" id="chargers"></div>
+    </section>
+  </div>
+</main>
+
+<footer>Costruito da Giuseppe Pellegrino con ElevenAgents, Supabase e Vercel.</footer>
+
+<elevenlabs-convai agent-id="agent_4401m6eewdh5e458m2jtvyn2e1pd"></elevenlabs-convai>
+<script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
+
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm";
+
+  const supabase = createClient(
+    "https://anyxgpoqlemjbvjwrlzc.supabase.co",
+    "sb_publishable_OhxWlH3EtkzreIytOZUnXw_j4Lr_tcC"
+  );
+
+  const STATUS = { available: "Disponibile", charging: "In ricarica", degraded: "Degradata", out_of_service: "Fuori servizio", offline: "Offline" };
+  const AFTER = { in_service: "in servizio", degraded: "degradata", out_of_service: "fuori servizio" };
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const tk = (id) => "TK-" + String(id).padStart(5, "0");
+  const fmt = (d) => new Date(d).toLocaleString("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  let tickets = [];
+  const chargers = new Map();
+
+  function renderTickets(flashId) {
+    const el = document.getElementById("tickets");
+    document.getElementById("ticket-count").textContent = tickets.length ? `· ${tickets.length}` : "";
+    if (!tickets.length) { el.innerHTML = '<div class="empty">Nessun ticket ancora. Parla con l\'assistente per aprirne uno.</div>'; return; }
+    el.innerHTML = tickets.map((t) => `
+      <article class="ticket${t.id === flashId ? " new" : ""}" data-id="${t.id}">
+        <span class="prio ${esc(t.priority)}">${esc(t.priority)}</span>
+        <div class="top"><span class="mono">${tk(t.id)}</span><span>${esc(t.charger_code)}</span>${t.error_code ? `<span class="err">${esc(t.error_code)}</span>` : ""}</div>
+        <time>${fmt(t.created_at)}</time>
+        <div class="desc">${esc(t.description)} <em>· colonnina ${esc(AFTER[t.charger_state_after] || t.charger_state_after)}</em></div>
+      </article>`).join("");
+    if (flashId) setTimeout(() => document.querySelector(`.ticket[data-id="${flashId}"]`)?.classList.remove("new"), 2500);
+  }
+
+  function renderChargers(flashCode) {
+    const list = [...chargers.values()].sort((a, b) => a.code.localeCompare(b.code));
+    document.getElementById("charger-count").textContent = `· ${list.length}`;
+    document.getElementById("chargers").innerHTML = list.map((c) => `
+      <div class="ch${c.code === flashCode ? " new" : ""}" data-code="${esc(c.code)}">
+        <div class="code">${esc(c.code)}</div>
+        <div class="meta">${esc(c.model)}</div>
+        <div class="badge s-${esc(c.status)}">${esc(STATUS[c.status] || c.status)}${c.active_error ? `<span class="err">${esc(c.active_error)}</span>` : ""}</div>
+      </div>`).join("");
+    if (flashCode) setTimeout(() => document.querySelector(`.ch[data-code="${flashCode}"]`)?.classList.remove("new"), 2500);
+  }
+
+  async function load() {
+    const [{ data: t }, { data: c }] = await Promise.all([
+      supabase.from("tickets").select("*").order("created_at", { ascending: false }).limit(20),
+      supabase.from("chargers").select("code, model, status, active_error"),
+    ]);
+    tickets = t || [];
+    (c || []).forEach((x) => chargers.set(x.code, x));
+    renderTickets(); renderChargers();
+  }
+
+  function subscribe() {
+    const live = document.getElementById("live"), label = document.getElementById("live-label");
+    supabase.channel("demo")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "tickets" }, ({ new: row }) => {
+        tickets = [row, ...tickets.filter((x) => x.id !== row.id)].slice(0, 20);
+        renderTickets(row.id);
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "chargers" }, ({ new: row }) => {
+        chargers.set(row.code, { ...chargers.get(row.code), ...row });
+        renderChargers(row.code);
+      })
+      .subscribe((status) => {
+        const on = status === "SUBSCRIBED";
+        live.classList.toggle("on", on);
+        label.textContent = on ? "in tempo reale" : "riconnessione…";
+      });
+  }
+
+  load().then(subscribe);
+</script>
+</body>
+</html>
